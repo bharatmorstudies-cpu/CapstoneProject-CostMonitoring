@@ -1,4 +1,13 @@
+# Environments
 .env
+.env.example
 __pycache__/
+*.pyc
+
+# Dependencies
 node_modules/
-*.json
+build/
+
+# IDEs
+.vscode/
+.idea/
