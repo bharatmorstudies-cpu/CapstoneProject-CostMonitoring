@@ -46,11 +46,12 @@ def fetch_aws_costs():
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
         
+        # FIXED: Changed 'GroupByKey' parameter to 'GroupBy' to align with AWS Boto3 specs
         response = ce_client.get_cost_and_usage(
             TimePeriod={'Start': start_date, 'End': end_date},
             Granularity='DAILY',
             Metrics=['UnblendedCost'],
-            GroupByKey=[{'Type': 'DIMENSION', 'Key': 'SERVICE'}]
+            GroupBy=[{'Type': 'DIMENSION', 'Key': 'SERVICE'}]
         )
         
         count = 0
