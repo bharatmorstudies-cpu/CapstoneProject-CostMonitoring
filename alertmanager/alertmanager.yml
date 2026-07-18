@@ -2,15 +2,21 @@ global:
   resolve_timeout: 5m
 
 route:
-  receiver: 'slack-notifications'
+  receiver: 'dual-escalation-stack'
   group_by: ['alertname']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 1h
 
 receivers:
-- name: 'slack-notifications'
+- name: 'dual-escalation-stack'
+  # 🟢 CHANNEL 1: Drops the live critical alert card straight into Slack
   slack_configs:
-  - api_url: 'http://localhost:8000/api/secrets/slack_webhook' # Secure loopback token context endpoint reference
+  - api_url: 'https://slack.com'
     channel: '#all-bharat'
-    text: "⚠️ *Cloud Budget Threshold Overrun Notice*\n*Alert Name:* {{ .CommonLabels.alertname }}\n*Severity Level:* {{ .CommonLabels.severity }}\n*Incident Details:* {{ .CommonAnnotations.description }}\n"
+    title: '⚠️ Cloud Budget Threshold Overrun Notice'
+    text: 'Alert: DailyCostLimitExceeded | Severity: critical | The multi-cloud budget engine detected an anomaly. Burn rate has simulated an outlay over the allowed threshold.'
+  
+  # 🔵 CHANNEL 2: Routes the payload into your backend python container for WhatsApp processing
+  webhook_configs:
+  - url: 'http://backend:8000/api/v1/alerts/whatsapp'

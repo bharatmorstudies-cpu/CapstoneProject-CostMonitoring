@@ -1,10 +1,11 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from prometheus_client import generate_latest, Gauge
 from dotenv import load_dotenv
+from twilio.rest import Client
 
 # Initialize project environmental context variables
 load_dotenv()
@@ -149,3 +150,59 @@ async def metrics():
 @app.get("/api/health")
 def api_health():
     return {"status": "healthy", "engine": "FastAPI Web Core"}
+
+# =====================================================================
+# 📱 WHATSAPP WEBHOOK GATEWAY MULTI-ROUTER EXTENSION
+# =====================================================================
+@app.post("/api/v1/alerts/whatsapp")
+async def send_whatsapp_alert(request: Request):
+    """
+    Intercepts incoming Prometheus Alertmanager payload blocks, formats 
+    the text properties, and pushes an immediate cloud notification to WhatsApp.
+    """
+    try:
+        payload = await request.json()
+        alerts = payload.get("alerts", [])
+        if not alerts:
+            return {"status": "ignored", "reason": "Empty alert data arrays"}
+
+        # Extract incident tracking tags from the structural packet index
+        alert_item = alerts[0]
+        alert_name = alert_item.get("labels", {}).get("alertname", "BudgetAnomaly")
+        severity = alert_item.get("labels", {}).get("severity", "critical")
+        description = alert_item.get("annotations", {}).get("description", "Infrastructure threshold breached.")
+
+        # Construct the enterprise ChatOps text layout notification template
+        whatsapp_message = (
+            f"🚨 *DEVOPS COST ALERT EXCEEDED*\n\n"
+            f"• *Alert Rule:* {alert_name}\n"
+            f"• *Severity:* {severity.upper()}\n"
+            f"• *Details:* {description}\n\n"
+            f"⚠️ _Action Required: Please evaluate the running Multi-Cloud Panel dashboard instance immediately._"
+        )
+
+        # Pull tokens from local sandboxed environmental properties securely
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID", "AC_YOUR_ACCOUNT_SID_PLACEHOLDER")
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN", "YOUR_AUTH_TOKEN_PLACEHOLDER")
+        target_phone = os.getenv("WHATSAPP_TARGET_NUMBER", "+918527498772")
+        
+        if "PLACEHOLDER" in account_sid:
+            print("💡 WhatsApp Forwarder: Operating in sandbox local testing mode logging outputs...")
+            print(f"\n--- SIMULATED WHATSAPP PUSH ---\n{whatsapp_message}\n--------------------------------")
+            return {"status": "simulated", "message": "Sandbox logging verification succeeded"}
+
+        twilio_client = Client(account_sid, auth_token)
+
+        # Dispatch transmission request straight to the cloud carrier nodes
+        message = twilio_client.messages.create(
+            body=whatsapp_message,
+            from_='whatsapp:+14155238886',  # Standard Twilio Sandbox Master Router Number
+            to=f"whatsapp:{target_phone}"
+        )
+
+        print(f"✅ Microservice notification dispatched to WhatsApp successfully. SID: {message.sid}")
+        return {"status": "success", "sid": message.sid}
+
+    except Exception as e:
+        print(f"❌ WhatsApp microservice routing layer exception fault: {str(e)}")
+        return {"status": "error", "detail": str(e)}
