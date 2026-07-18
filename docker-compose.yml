@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # 1. NoSQL Persistence Database Storage Node
+  mongodb:
+    image: mongo:latest
+    container_name: capstone_mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: SecureMongoPassword123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - capstone_net
+
+  # 2. FastAPI Cloud Tracking Core API Service
+  backend:
+    build: ./backend
+    container_name: capstone_backend_api
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://root:SecureMongoPassword123@mongodb:27017/devops_metrics?authSource=admin
+    depends_on:
+      - mongodb
+    networks:
+      - capstone_net
+
+  # 3. React Static Nginx Presentation Frontend
+  frontend:
+    build: ./frontend
+    container_name: capstone_frontend_client
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - capstone_net
+
+  # 4. Prometheus Engine Telemetry Collector Scraper
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: capstone_prometheus
+    restart: always
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+    networks:
+      - capstone_net
+
+  # 5. Alertmanager Push Routing Incident Webhook Gateway
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: capstone_alertmanager
+    restart: always
+    volumes:
+      - ./alertmanager/:/etc/alertmanager/
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - "9093:9093"
+    networks:
+      - capstone_net
+
+networks:
+  capstone_net:
+    driver: bridge
+
+volumes:
+  mongo_data:

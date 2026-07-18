@@ -1,0 +1,12 @@
+groups:
+  - name: multi_cloud_budget_rules
+    rules:
+    - alert: DailyCostLimitExceeded
+      # Triggers an alarm when our custom metric crosses our $100 budget allowance condition boundary
+      expr: cloud_cost_daily_burn_rate > 100
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Multi-cloud infrastructure spend threshold breached"
+        description: "The aggregated multi-cloud metric gauge is reporting outlays of ${{ $value }}, crossing the allocated $100 allowance limit constraint."
