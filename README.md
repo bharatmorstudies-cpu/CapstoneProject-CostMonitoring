@@ -4,46 +4,51 @@ An enterprise-grade, full-stack microservices application engineered to serve as
 
 ---
 
-## 🏗️ System Architecture & Data Flow
+## 🏗️ System Architecture & Event Topology
 
 ```text
-  ┌────────────────────────────────────────────────────────┐
-  │                   Multi-Cloud APIs                     │
-  │     (AWS Cost Explorer API / GCP Cloud Billing API)    │
-  └───────────────────────────┬────────────────────────────┘
-                              │ (Python Ingestion Jobs)
-                              ▼
-  ┌────────────────────────────────────────────────────────┐
-  │               MongoDB NoSQL Cluster                    │
-  │     (Stores Normalized Historical Billing Records)     │
-  └───────────────────────────┬────────────────────────────┘
-                              │
-               ┌──────────────┴──────────────┐
-               ▼                             ▼
-  ┌────────────────────────┐    ┌────────────────────────┐
-  │   Python FastAPI App   │    │ Prometheus / Alertmgr  │
-  │  (Serves JSON Data)    │    │ (Monitors Thresholds)  │
-  └────────────┬───────────┘    └────────────┬───────────┘
-               │                             │
-               ▼                             ▼
-  ┌────────────────────────┐    ┌────────────────────────┐
-  │ React.js User Frontend │    │ Slack / Teams Channel  │
-  │ (Analytical Dashboards)│    │  (Live Push Alerts)    │
-  └────────────────────────┘    └────────────────────────┘
+                                 ┌────────────────────────────────────────────────────────┐
+                                 │                   Multi-Cloud APIs                     │
+                                 │     (AWS Cost Explorer API / GCP Cloud Billing API)    │
+                                 └───────────────────────────┬────────────────────────────┘
+                                                             │ (Python Ingestion Jobs)
+                                                             ▼
+                                 ┌────────────────────────────────────────────────────────┐
+                                 │               MongoDB NoSQL Cluster                    │
+                                 │     (Stores Normalized Historical Billing Records)     │
+                                 └───────────────────────────┬────────────────────────────┘
+                                                             │
+                                              ┌──────────────┴──────────────┐
+                                              ▼                             ▼
+                                 ┌────────────────────────┐    ┌────────────────────────┐
+                                 │   Python FastAPI App   │    │ Prometheus / Alertmgr  │
+                                 │  (Serves JSON Data)    │    │ (Monitors Thresholds)  │
+                                 └────────────┬───────────┘    └────────────┬───────────┘
+                                              │                             │
+                                              ▼                             ▼
+                                 ┌────────────────────────┐    ┌────────────┴───────────┐
+                                 │ React.js User Frontend │    │ Dual Escalation Receivers
+                                 │ (Analytical Dashboards)│    └──────┬───────────┬─────┘
+                                 └────────────────────────┘           │           │
+                                                                      ▼           ▼
+                                                       ┌────────────────┐ ┌────────────────┐
+                                                       │  Slack Channel │ │ WhatsApp App   │
+                                                       │ (ChatOps Feed) │ │ (Push Alerts)  │
+                                                       └────────────────┘ └────────────────┘
 ```
 
 ---
 
 ## 🎯 Project Vision & Scope
 
-Unmanaged cloud deployments frequently suffer from "cloud blindness," leading to thousands of dollars wasted on forgotten, idle, or oversized cloud resources. The objective of this capstone project is to engineer an automated multi-tenant system that tracks, isolates, and reduces cloud infrastructure costs in real-time.
+Unmanaged cloud deployments frequently suffer from "cloud blindness," leading to thousands of dollars wasted on forgotten, idle, or oversized cloud resources. This capstone project engineers an automated multi-tenant system that tracks, isolates, and reduces cloud infrastructure costs in real-time.
 
 ### Core Objectives:
-1. **Cross-Cloud Data Aggregation**: Dynamically pull multi-cloud billing line items and unstructured cost objects from the cloud vendor APIs (AWS and GCP).
-2. **Unified Data Normalization**: Store varying cloud metrics natively into a flexible NoSQL database model, converting mixed data structures into matching records.
+1. **Cross-Cloud Data Aggregation**: Dynamically pull multi-cloud billing line items and unstructured cost objects from vendor APIs (AWS Cost Explorer and GCP Cloud Billing).
+2. **Unified Data Normalization**: Store varying cloud metrics natively into a flexible NoSQL database model, converting mixed data structures into matching records without schema overhead.
 3. **Continuous Tracking & Metrics Retention**: Employ background task automation to maintain rolling historical cost logs over a custom timeframe.
-4. **Active Cost Optimization & Anomaly Detection**: Analyze hardware utilization levels (such as server CPU usage via AWS CloudWatch) to actively identify under-utilized or idle instances, outputting clear cost-saving recommendations.
-5. **Proactive Budget Guardrails**: Establish automated alerting rules to instantly trigger and route over-budget incident warnings to team communication applications like Slack using custom incoming webhooks.
+4. **Active Cost Optimization & Anomaly Detection**: Analyze hardware utilization levels to actively identify under-utilized or idle instances, outputting clear cost-saving recommendations.
+5. **Simultaneous Multi-Channel Budget Guardrails**: Establish automated alerting rules to instantly trigger and route over-budget incident warnings to Slack channels and mobile WhatsApp clients concurrently.
 
 ---
 
@@ -54,14 +59,14 @@ Capstone-CostMonitoring/
 ├── .github/workflows/
 │   └── deploy.yml            # Automated CI/CD build scripts
 ├── alertmanager/
-│   └── alertmanager.yml      # Incident notification routing profile
+│   └── alertmanager.yml      # Incident notification dual-routing profile
 ├── prometheus/
 │   ├── alert.rules.yml       # Cost metric alerting conditions
 │   └── prometheus.yml        # Telemetry metrics collection configuration
 ├── backend/                  # Asynchronous Core Data Layer
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── main.py           # FastAPI Web Application and metrics endpoint
+│   │   ├── main.py           # FastAPI Web Core and WhatsApp webhook router
 │   │   ├── collectors.py     # Multi-cloud extraction and normalization loops
 │   │   └── database.py       # Asynchronous MongoDB client connection pool
 │   ├── requirements.txt      # Core Python application dependencies
@@ -87,6 +92,7 @@ Capstone-CostMonitoring/
 - **Visual Analytics Framework**: JavaScript (React.js Client App via Vite)
 - **Persistence Storage Node**: MongoDB Engine (NoSQL Document Store)
 - **System Metrics Monitoring**: Prometheus Scraper Engine & Alertmanager Daemon
+- **Cloud Notification Gateway**: Twilio API Ecosystem
 - **Orchestration & Delivery**: Docker & Docker Compose container runtimes
 
 ---
@@ -106,6 +112,10 @@ AWS_ACCESS_KEY_ID=YOUR_AWS_ACCESS_KEY_ID_HERE
 AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_ACCESS_KEY_HERE
 GCP_PROJECT_ID=project-55b551ca-4784-44f6-abc
 GCP_ACCESS_TOKEN=YOUR_SHORT_LIVED_OAUTH_TOKEN_HERE
+TWILIO_ACCOUNT_SID=YOUR_TWILIO_ACCOUNT_SID_HERE
+TWILIO_AUTH_TOKEN=YOUR_TWILIO_AUTH_TOKEN_HERE
+WHATSAPP_TARGET_NUMBER=YOUR_MOBILE_NUMBER_HERE
+```
 
 ### Step 2: Build and Launch the Orchestrated Network Topology
 Compile container assets and launch the entire full-stack graph network in background mode:
@@ -128,34 +138,22 @@ Open your web browser to interact with the runtime application layers:
 
 ---
 
-## 🏁 Completed Milestones
-
-As of our latest sprint review checkpoint, all project parameters have been completely initialized:
-
-- [x] **Microservices Directory Layout**: Separated frontend presentation panels from backend analytical script daemons following enterprise standards.
-- [x] **Database Architecture & Aggregation**: Configured an automated backend, database replication, and optimized pipeline aggregations using MongoDB.
-- [x] **Visual Analytics Canvas**: Built an interactive browser client dashboard with active cross-cloud dataset filtering capabilities using React and Recharts.
-- [x] **Proactive Telemetry Alerts**: Implemented cost threshold monitoring policies using Prometheus and Alertmanager to route alarms via active Slack webhooks.
-- [x] **Microservice Assembly**: Authoring robust multi-stage Dockerfiles and containerizing the entire graph topology over single command boot loops.
-
----
-
-## 🎓 Step-by-Step Viva Presentation Script 
+## 🎓 Step-by-Step Viva Presentation Script (3-Minute Presentation)
 
 Use this structure to walk your evaluators through the running dashboard during your project defense:
 
-### 1. Introduction & Project Scope 
-> *"Good morning, evaluators. This capstone presents a **DevOps Multi-Cloud Cost Optimization & Telemetry Dashboard**. 
+### 1. Introduction & Project Scope [0:00 - 0:45]
+> *"Good morning, evaluators. This capstone presents a **DevOps Multi-Cloud Cost Optimization & Telemetry Dashboard**.
 >
-> Modern development operations face 'cloud blindness,' often overspending on forgotten or idle virtual instances. Our project scope resolves this by constructing a full-stack microservices application that unifies cross-cloud data ingestion, normalizes mixed billing objects, and sets up real-time alerting systems to catch budget breaches instantly."*
+> Modern development operations face 'cloud blindness,' often overspending on forgotten or idle virtual instances. Our project scope resolves this by constructing a full-stack microservices application that unifies cross-cloud data ingestion, normalizes mixed billing objects, and sets up automated real-time alerting channels to catch budget breaches instantly."*
 
-### 2. Architecture & The Choice of MongoDB
-> *"Let's examine our local architecture now running inside Docker Compose. 
-> 
+### 2. Architecture & The Choice of MongoDB [0:45 - 1:45]
+> *"Let's examine our local architecture now running inside Docker Compose.
+>
 > We chose a **MongoDB NoSQL Document Store** rather than a traditional relational SQL engine. Why? Because multi-cloud APIs return unstructured, evolving JSON records. While AWS yields granular unblended line items, GCP models utilize flat metrics tracking datasets. A relational SQL approach would necessitate complex database table migrations whenever a cloud provider modifies a reporting property. MongoDB stores these changing JSON files natively into a single, high-performance database collection.
 >
 > Our **FastAPI backend** queries this document pool asynchronously to calculate metric aggregations, feeding a responsive **React.js and Recharts canvas** that enables dynamic asset ledger filtering over port `3000`."*
 
-### 3. Monitoring, Cost Alerting, & Live Verification
-> *"To ensure automated budget control, we deployed **Prometheus and Alertmanager**. 
+### 3. Monitoring, Dual Cost Alerting, & Live Verification [1:45 - 3:00]
+> *"To ensure automated budget control, we deployed **Prometheus and Alertmanager**.
 >
